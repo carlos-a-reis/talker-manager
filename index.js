@@ -103,7 +103,9 @@ const dataValidation = (req, res, next) => {
 const rateValidation = (req, res, next) => {
   const { talk } = req.body;
 
-  if (!talk.rate) return res.status(400).json({ message: 'O campo "rate" é obrigatório' });
+  if (!talk.rate && talk.rate !== 0) {
+    return res.status(400).json({ message: 'O campo "rate" é obrigatório' });
+  }
 
   if (talk.rate < 1 || talk.rate > 5) {
     return res.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
@@ -132,6 +134,28 @@ async (req, res) => {
   }
 
   res.status(201).json(newTalker);
+});
+
+app.put('/talker/:id', 
+[tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation],
+async (req, res) => {
+  const { name, age, talk } = req.body;
+  const { id } = req.params;
+
+  const editedTalker = { id: Number(id), name, age, talk };
+
+  const talkerIndex = talkers.findIndex((t) => t.id === Number(id));
+  if (talkerIndex === -1) return res.status(401).json({ message: 'Id invalido' });
+
+  talkers.splice(talkerIndex, 1, editedTalker);
+
+  try {
+    await fs.writeFile('./talker.json', JSON.stringify(talkers));
+  } catch (err) {
+    res.status(401).json({ message: err });
+  }
+  
+  res.status(200).json(editedTalker);
 });
 
 // não remova esse endpoint, e para o avaliador funcionar
