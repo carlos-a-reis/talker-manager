@@ -145,7 +145,7 @@ async (req, res) => {
   const editedTalker = { id: Number(id), name, age, talk };
 
   const talkerIndex = talkers.findIndex((t) => t.id === Number(id));
-  if (talkerIndex === -1) return res.status(401).json({ message: 'Id invalido' });
+  if (talkerIndex === -1) return res.status(404).json({ message: 'Id não encontrado' });
 
   talkers.splice(talkerIndex, 1, editedTalker);
 
@@ -156,6 +156,23 @@ async (req, res) => {
   }
   
   res.status(200).json(editedTalker);
+});
+
+app.delete('/talker/:id', tokenAuthentication, async (req, res) => {
+  const { id } = req.params;
+
+  const talkerIndex = talkers.findIndex((t) => t.id === Number(id));
+  if (talkerIndex === -1) return res.status(404).json({ message: 'Id não encontrado' });
+  
+  talkers.splice(talkerIndex, 1);
+
+  try {
+    await fs.writeFile('./talker.json', JSON.stringify(talkers));
+  } catch (err) {
+    res.status(401).json({ message: err });
+  }
+
+  res.status(204).end();
 });
 
 // não remova esse endpoint, e para o avaliador funcionar
