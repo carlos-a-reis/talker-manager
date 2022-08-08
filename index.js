@@ -3,7 +3,14 @@ const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const crypto = require('crypto');
 
-const talkers = require('./talker.json');
+const getTalkers = async () => {
+  try {
+    const data = await fs.readFile('./talker.json');
+    return JSON.parse(data); 
+  } catch (err) {
+    return [];
+  }
+};
 
 const tokens = [];
 
@@ -15,13 +22,36 @@ const PORT = '3000';
 
 const tokenGenerator = () => crypto.randomBytes(8).toString('hex');
 
-app.get('/talker', (_req, res) => {
-  if (!talkers) return res.status(200).json([]);
-  console.log(talkers);
+app.get('/talker', async (_req, res) => {
+  const talkers = await getTalkers();
+  
   res.status(200).json(talkers);
 });
 
-app.get('/talker/:id', (req, res) => {
+const tokenAuthentication = (req, res, next) => {
+  const { authorization } = req.headers;
+
+  const validToken = tokens.find((t) => t.token === authorization);
+
+  if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
+  if (!validToken) return res.status(401).json({ message: 'Token inválido' });
+
+  next();
+};
+
+app.get('/talker/search', tokenAuthentication, async (req, res) => {
+  const talkers = await getTalkers();
+  const { q } = req.query;
+  
+  const searchResult = talkers.filter((t) => t.name.includes(q));
+
+  if (q === '') return res.status(200).json(talkers);
+
+  res.status(200).json(searchResult);
+});
+
+app.get('/talker/:id', async (req, res) => {
+  const talkers = await getTalkers();
   const { id } = req.params;
   const talker = talkers.find((t) => t.id === Number(id));
 
@@ -49,17 +79,6 @@ app.post('/login', (req, res) => {
 
   res.status(200).json({ token });
 });
-
-const tokenAuthentication = (req, res, next) => {
-  const { authorization } = req.headers;
-
-  const validToken = tokens.find((t) => t.token === authorization);
-
-  if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
-  if (!validToken) return res.status(401).json({ message: 'Token inválido' });
-
-  next();
-};
 
 const infoValidation = (req, res, next) => {
   const { name, age } = req.body;
@@ -117,6 +136,7 @@ const rateValidation = (req, res, next) => {
 app.post('/talker', 
 [tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation], 
 async (req, res) => {
+  const talkers = await getTalkers();
   const { name, age, talk } = req.body;
 
   const newTalker = {
@@ -139,6 +159,7 @@ async (req, res) => {
 app.put('/talker/:id', 
 [tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation],
 async (req, res) => {
+  const talkers = await getTalkers();
   const { name, age, talk } = req.body;
   const { id } = req.params;
 
@@ -159,11 +180,12 @@ async (req, res) => {
 });
 
 app.delete('/talker/:id', tokenAuthentication, async (req, res) => {
+  const talkers = await getTalkers();
   const { id } = req.params;
 
   const talkerIndex = talkers.findIndex((t) => t.id === Number(id));
   if (talkerIndex === -1) return res.status(404).json({ message: 'Id não encontrado' });
-  
+
   talkers.splice(talkerIndex, 1);
 
   try {
