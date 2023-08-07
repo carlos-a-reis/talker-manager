@@ -89,7 +89,7 @@ const infoValidation = (req, res, next) => {
   }
   
   if (!age) return res.status(400).json({ message: 'O campo "age" é obrigatório' });
-  if (age < 18) {
+  if (age <= 18) {
     return res.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
   }
 
@@ -197,7 +197,6 @@ app.delete('/talker/:id', tokenAuthentication, async (req, res) => {
   res.status(204).end();
 });
 
-// não remova esse endpoint, e para o avaliador funcionar
 app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
 });
