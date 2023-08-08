@@ -3,6 +3,16 @@ const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const crypto = require('crypto');
 
+const app = express();
+app.use(bodyParser.json());
+
+const tokens = [];
+
+const HTTP_OK_STATUS = 200;
+const PORT = '3000';
+
+const tokenGenerator = () => crypto.randomBytes(8).toString('hex');
+
 const getTalkers = async () => {
   try {
     const data = await fs.readFile('./talker.json');
@@ -11,22 +21,6 @@ const getTalkers = async () => {
     return [];
   }
 };
-
-const tokens = [];
-
-const app = express();
-app.use(bodyParser.json());
-
-const HTTP_OK_STATUS = 200;
-const PORT = '3000';
-
-const tokenGenerator = () => crypto.randomBytes(8).toString('hex');
-
-app.get('/talker', async (_req, res) => {
-  const talkers = await getTalkers();
-  
-  res.status(200).json(talkers);
-});
 
 const tokenAuthentication = (req, res, next) => {
   const { authorization } = req.headers;
@@ -38,47 +32,6 @@ const tokenAuthentication = (req, res, next) => {
 
   next();
 };
-
-app.get('/talker/search', tokenAuthentication, async (req, res) => {
-  const talkers = await getTalkers();
-  const { q } = req.query;
-  
-  const searchResult = talkers.filter((t) => t.name.includes(q));
-
-  if (q === '') return res.status(200).json(talkers);
-
-  res.status(200).json(searchResult);
-});
-
-app.get('/talker/:id', async (req, res) => {
-  const talkers = await getTalkers();
-  const { id } = req.params;
-  const talker = talkers.find((t) => t.id === Number(id));
-
-  if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
-
-  res.status(200).json(talker);
-});
-
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  const validator = /\S+@\S+\.\S+/;
-
-  if (!email) return res.status(400).json({ message: 'O campo "email" é obrigatório' });
-  if (!validator.test(email)) {
-    return res.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
-  }
-
-  if (!password) return res.status(400).json({ message: 'O campo "password" é obrigatório' });
-  if (password.length < 6) {
-    return res.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
-  }
-  
-  const token = tokenGenerator();
-  tokens.push({ token });
-
-  res.status(200).json({ token });
-});
 
 const infoValidation = (req, res, next) => {
   const { name, age } = req.body;
@@ -132,6 +85,53 @@ const rateValidation = (req, res, next) => {
 
   next();
 };
+
+app.get('/talker', async (_req, res) => {
+  const talkers = await getTalkers();
+  
+  res.status(200).json(talkers);
+});
+
+app.get('/talker/search', tokenAuthentication, async (req, res) => {
+  const talkers = await getTalkers();
+  const { q } = req.query;
+  
+  const searchResult = talkers.filter((t) => t.name.includes(q));
+
+  if (q === '') return res.status(200).json(talkers);
+
+  res.status(200).json(searchResult);
+});
+
+app.get('/talker/:id', async (req, res) => {
+  const talkers = await getTalkers();
+  const { id } = req.params;
+  const talker = talkers.find((t) => t.id === Number(id));
+
+  if (!talker) return res.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+
+  res.status(200).json(talker);
+});
+
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const validator = /\S+@\S+\.\S+/;
+
+  if (!email) return res.status(400).json({ message: 'O campo "email" é obrigatório' });
+  if (!validator.test(email)) {
+    return res.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
+  }
+
+  if (!password) return res.status(400).json({ message: 'O campo "password" é obrigatório' });
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
+  }
+  
+  const token = tokenGenerator();
+  tokens.push({ token });
+
+  res.status(200).json({ token });
+});
 
 app.post('/talker', 
 [tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation], 
