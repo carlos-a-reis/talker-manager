@@ -8,9 +8,6 @@ app.use(bodyParser.json());
 
 const tokens = [];
 
-const HTTP_OK_STATUS = 200;
-const PORT = '3000';
-
 const tokenGenerator = () => crypto.randomBytes(8).toString('hex');
 
 const getTalkers = async () => {
@@ -25,9 +22,10 @@ const getTalkers = async () => {
 const tokenAuthentication = (req, res, next) => {
   const { authorization } = req.headers;
 
+  if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
+
   const validToken = tokens.find((t) => t.token === authorization);
 
-  if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
   if (!validToken) return res.status(401).json({ message: 'Token inválido' });
 
   next();
@@ -42,7 +40,7 @@ const infoValidation = (req, res, next) => {
   }
   
   if (!age) return res.status(400).json({ message: 'O campo "age" é obrigatório' });
-  if (age <= 18) {
+  if (age < 18) {
     return res.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
   }
 
@@ -51,21 +49,15 @@ const infoValidation = (req, res, next) => {
 
 const talkValidation = (req, res, next) => {
   const { talk } = req.body;
+  const dateValidation = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
   
   if (!talk) return res.status(400).json({ message: 'O campo "talk" é obrigatório' });
-
-  next();
-};
-
-const dataValidation = (req, res, next) => {
-  const { talk } = req.body;
-  const dateValidator = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
 
   if (!talk.watchedAt) {
     return res.status(400).json({ message: 'O campo "watchedAt" é obrigatório' });
   }
 
-  if (!dateValidator.test(talk.watchedAt)) {
+  if (!dateValidation.test(talk.watchedAt)) {
     return res.status(400).json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' });
   }
 
@@ -95,10 +87,10 @@ app.get('/talker', async (_req, res) => {
 app.get('/talker/search', tokenAuthentication, async (req, res) => {
   const talkers = await getTalkers();
   const { q } = req.query;
-  
-  const searchResult = talkers.filter((t) => t.name.includes(q));
 
   if (q === '') return res.status(200).json(talkers);
+  
+  const searchResult = talkers.filter((t) => t.name.includes(q));
 
   res.status(200).json(searchResult);
 });
@@ -134,7 +126,7 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/talker', 
-[tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation], 
+[tokenAuthentication, infoValidation, talkValidation, rateValidation], 
 async (req, res) => {
   const talkers = await getTalkers();
   const { name, age, talk } = req.body;
@@ -157,7 +149,7 @@ async (req, res) => {
 });
 
 app.put('/talker/:id', 
-[tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation],
+[tokenAuthentication, infoValidation, talkValidation, rateValidation],
 async (req, res) => {
   const talkers = await getTalkers();
   const { name, age, talk } = req.body;
@@ -196,6 +188,9 @@ app.delete('/talker/:id', tokenAuthentication, async (req, res) => {
 
   res.status(204).end();
 });
+
+const HTTP_OK_STATUS = 200;
+const PORT = '3000';
 
 app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
