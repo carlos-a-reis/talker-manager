@@ -3,6 +3,13 @@ const bodyParser = require('body-parser');
 const fs = require('fs').promises;
 const crypto = require('crypto');
 
+const app = express();
+app.use(bodyParser.json());
+
+const tokens = [];
+
+const tokenGenerator = () => crypto.randomBytes(8).toString('hex');
+
 const getTalkers = async () => {
   try {
     const data = await fs.readFile('./talker.json');
@@ -12,15 +19,64 @@ const getTalkers = async () => {
   }
 };
 
-const tokens = [];
+const tokenAuthentication = (req, res, next) => {
+  const { authorization } = req.headers;
 
-const app = express();
-app.use(bodyParser.json());
+  if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
 
-const HTTP_OK_STATUS = 200;
-const PORT = '3000';
+  const validToken = tokens.find((t) => t.token === authorization);
 
-const tokenGenerator = () => crypto.randomBytes(8).toString('hex');
+  if (!validToken) return res.status(401).json({ message: 'Token inválido' });
+
+  next();
+};
+
+const infoValidation = (req, res, next) => {
+  const { name, age } = req.body;
+
+  if (!name) return res.status(400).json({ message: 'O campo "name" é obrigatório' });
+  if (name.length < 3) {
+    return res.status(400).json({ message: 'O "name" deve ter pelo menos 3 caracteres' });
+  }
+  
+  if (!age) return res.status(400).json({ message: 'O campo "age" é obrigatório' });
+  if (age < 18) {
+    return res.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
+  }
+
+  next();
+};
+
+const talkValidation = (req, res, next) => {
+  const { talk } = req.body;
+  const dateValidation = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
+  
+  if (!talk) return res.status(400).json({ message: 'O campo "talk" é obrigatório' });
+
+  if (!talk.watchedAt) {
+    return res.status(400).json({ message: 'O campo "watchedAt" é obrigatório' });
+  }
+
+  if (!dateValidation.test(talk.watchedAt)) {
+    return res.status(400).json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' });
+  }
+
+  next();
+};
+
+const rateValidation = (req, res, next) => {
+  const { talk } = req.body;
+
+  if (!talk.rate && talk.rate !== 0) {
+    return res.status(400).json({ message: 'O campo "rate" é obrigatório' });
+  }
+
+  if (talk.rate < 1 || talk.rate > 5) {
+    return res.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
+  }
+
+  next();
+};
 
 app.get('/talker', async (_req, res) => {
   const talkers = await getTalkers();
@@ -28,24 +84,13 @@ app.get('/talker', async (_req, res) => {
   res.status(200).json(talkers);
 });
 
-const tokenAuthentication = (req, res, next) => {
-  const { authorization } = req.headers;
-
-  const validToken = tokens.find((t) => t.token === authorization);
-
-  if (!authorization) return res.status(401).json({ message: 'Token não encontrado' });
-  if (!validToken) return res.status(401).json({ message: 'Token inválido' });
-
-  next();
-};
-
 app.get('/talker/search', tokenAuthentication, async (req, res) => {
   const talkers = await getTalkers();
   const { q } = req.query;
-  
-  const searchResult = talkers.filter((t) => t.name.includes(q));
 
   if (q === '') return res.status(200).json(talkers);
+
+  const searchResult = talkers.filter((t) => t.name.toLowerCase().includes(q.toLowerCase()));
 
   res.status(200).json(searchResult);
 });
@@ -80,61 +125,8 @@ app.post('/login', (req, res) => {
   res.status(200).json({ token });
 });
 
-const infoValidation = (req, res, next) => {
-  const { name, age } = req.body;
-
-  if (!name) return res.status(400).json({ message: 'O campo "name" é obrigatório' });
-  if (name.length < 3) {
-    return res.status(400).json({ message: 'O "name" deve ter pelo menos 3 caracteres' });
-  }
-  
-  if (!age) return res.status(400).json({ message: 'O campo "age" é obrigatório' });
-  if (age <= 18) {
-    return res.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
-  }
-
-  next();
-};
-
-const talkValidation = (req, res, next) => {
-  const { talk } = req.body;
-  
-  if (!talk) return res.status(400).json({ message: 'O campo "talk" é obrigatório' });
-
-  next();
-};
-
-const dataValidation = (req, res, next) => {
-  const { talk } = req.body;
-  const dateValidator = /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/;
-
-  if (!talk.watchedAt) {
-    return res.status(400).json({ message: 'O campo "watchedAt" é obrigatório' });
-  }
-
-  if (!dateValidator.test(talk.watchedAt)) {
-    return res.status(400).json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' });
-  }
-
-  next();
-};
-
-const rateValidation = (req, res, next) => {
-  const { talk } = req.body;
-
-  if (!talk.rate && talk.rate !== 0) {
-    return res.status(400).json({ message: 'O campo "rate" é obrigatório' });
-  }
-
-  if (talk.rate < 1 || talk.rate > 5) {
-    return res.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
-  }
-
-  next();
-};
-
 app.post('/talker', 
-[tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation], 
+[tokenAuthentication, infoValidation, talkValidation, rateValidation], 
 async (req, res) => {
   const talkers = await getTalkers();
   const { name, age, talk } = req.body;
@@ -157,7 +149,7 @@ async (req, res) => {
 });
 
 app.put('/talker/:id', 
-[tokenAuthentication, infoValidation, talkValidation, dataValidation, rateValidation],
+[tokenAuthentication, infoValidation, talkValidation, rateValidation],
 async (req, res) => {
   const talkers = await getTalkers();
   const { name, age, talk } = req.body;
@@ -196,6 +188,9 @@ app.delete('/talker/:id', tokenAuthentication, async (req, res) => {
 
   res.status(204).end();
 });
+
+const HTTP_OK_STATUS = 200;
+const PORT = '3000';
 
 app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
