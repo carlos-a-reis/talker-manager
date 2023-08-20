@@ -277,7 +277,7 @@ Status: 204 (No Content)
   docker compose up -d
   ```
 
- - Acesse o terminal interativo do container que está rodando em segundo plano
+- Acesse o terminal interativo do container que está rodando em segundo plano
 
   ```bash
   docker exec -it talker-manager bash
