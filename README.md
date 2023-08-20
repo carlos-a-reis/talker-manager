@@ -1,33 +1,41 @@
 # Talker Manager
 
-## Contexto
+## 📑 Contexto
 
-O Talker Manager é uma API REST construída com Node.js e Express com intuito de praticar os estudos das tecnologias com uma simulação de um gerenciador de informações de palestrantes (talkers).
-Nesta aplicação é possível realizar as operações básicas de CRUD (Create, Read, Update e Delete), permitindo cadastrar, listar, pesquisar, editar e excluir palestrantes.
+O Talker Manager é uma API REST construída com Node.js e Express, com o intuito de praticar os estudos dessas tecnologias por meio da simulação de um gerenciador de informações de palestrantes (talkers).
+Nesta aplicação, é possível realizar as operações básicas de CRUD (Create, Read, Update e Delete), permitindo cadastrar, listar, pesquisar, editar e excluir palestrantes.
 
-## Tecnologias Usadas
+## 💻 Tecnologias Usadas
 
-> [Node.js](https://nodejs.org/pt-br/docs) e [Express](https://expressjs.com/pt-br/)
+> [Node.js](https://nodejs.org/pt-br/docs)
+
+> [Express](https://expressjs.com/pt-br/)
 
 <details>
-<summary><h2>EndPoints da API</h2></summary>
+<summary><h2>📌 EndPoints da API</h2></summary>
 
  ### `GET` /talker
 
-> Retorna todos os palestrantes:
+> Retorna todos os palestrantes
 
-```bash
+> Retorno
+
+```javascript
+Status: 200
+```
+
+```json
 [
   {
-    "name": { talker name },
-    "age": { talker age },
-    "id": { id },
+    "name": "{ nome do palestrante }",
+    "age": "{ idade do palestrante }",
+    "id": "{ id do palestrante }",
     "talk": {
-      "watchedAt": { some date },
-      "rate": { talker rate }
+      "watchedAt": "{ data da palestra no padrão dd/mm/aaaa }",
+      "rate": "{ nota do palestrante }"
     }
   },
-...
+  {}
 ]
 ```
 
@@ -35,16 +43,22 @@ Nesta aplicação é possível realizar as operações básicas de CRUD (Create,
 
 ### `GET` /talker/:id
 
-> Retorna retorna o palestrante por seu "id":
+> Retorna o palestrante com o "id" passado como parâmetro
 
-```bash
+> Retorno
+
+```javascript
+Status: 200
+```
+
+```json
 {
-  "name": { talker name },
-  "age": { talker age },
-  "id": { id },
+  "name": "{ nome do palestrante }",
+  "age": "{ idade do palestrante }",
+  "id": "{ id do palestrante }",
   "talk": {
-    "watchedAt": { some date },
-    "rate": { talker rate }
+    "watchedAt": "{ data da palestra no padrão dd/mm/aaaa }",
+    "rate": "{ nota do palestrante }"
   }
 }
 ```
@@ -53,32 +67,38 @@ Nesta aplicação é possível realizar as operações básicas de CRUD (Create,
 
 ### `GET` /talker/search
 
+> Retorna os palestrantes cujos nomes incluem a query "q" passada
+
 > Headers
 
 ```
-Authorization: { token passado pelo EndPoint "/login" }
+Authorization: { token retornado pelo EndPoint "/login" }
 ```
 
 > Query Parameters
 
 ```
-q: { string para pesquisa por nome do palestrante }
+q: { string usada para pesquisar por nome do palestrante }
 ```
 
-> Retorna os palestrante que o nome inclui a query "q" passada:
+> Retorno
 
-```bash
+```javascript
+Status: 200
+```
+
+```json
 [
   {
-    "name": { talker name },
-    "age": { talker age },
-    "id": { id },
+    "name": "{ nome do palestrante }",
+    "age": "{ idade do palestrante }",
+    "id": "{ id do palestrante }",
     "talk": {
-      "watchedAt": { some date },
-      "rate": { talker rate }
+      "watchedAt": "{ data da palestra no padrão dd/mm/aaaa }",
+      "rate": "{ nota do palestrante }"
     }
   },
-...
+  {}
 ]
 ```
 
@@ -86,21 +106,206 @@ q: { string para pesquisa por nome do palestrante }
 
 ### `POST` /login
 
+> Cria o token que é necessário para os EndPoints que recebem o Header "Authorization"
+
 > Body
 
-```bash
+```json
 {
-  "email: { e-mail no modelo "email@email.com" },
-  "password": { senha de no minimo 6 caracteres }
+  "email": "{ e-mail no padrão 'email@email.com' }",
+  "password": "{ senha com no mínimo 6 caracteres }"
 }
 ```
 
-> Retorna um token necessário para os EndPoints que requerem o Header "Authorization":
+> Retorno
 
-```bash
+```javascript
+Status: 200
+```
+
+```json
 {
-  "token": { token aleatorio de 16 digitos }
+  "token": "{ token aleatorio de 16 digitos }"
 }
+```
+
+<hr />
+
+### `POST` /talker
+
+> Cria um novo palestrante
+
+> Headers:
+
+```
+Authorization: { token retornado pelo EndPoint "/login" }
+```
+
+> Body:
+
+```json
+{
+  "name": "{ nome do palestrante }",
+  "age": "{ idade do palestrante }",
+  "talk": {
+    "watchedAt": "{ data da palestra no padrão dd/mm/aaaa }",
+    "rate": "{ nota do palestrante }"
+  }
+}
+```
+
+> Retorno
+
+```javascript
+Status: 201
+```
+
+```json
+{
+  "name": "{ nome do palestrante }",
+  "age": "{ idade do palestrante }",
+  "id": "{ id do palestrante }",
+  "talk": {
+    "watchedAt": "{ data da palestra no padrão dd/mm/aaaa }",
+    "rate": "{ nota do palestrante }"
+  }
+}
+```
+
+<hr />
+
+### `PUT` /talker/:id
+
+> Atualiza o palestrante com o "id" passado como parâmetro
+
+> Headers:
+
+```
+Authorization: { token retornado pelo EndPoint "/login" }
+```
+
+> Body:
+
+```json
+{
+  "name": "{ nome do palestrante }",
+  "age": "{ idade do palestrante }",
+  "talk": {
+    "watchedAt": "{ data da palestra no padrão dd/mm/aaaa }",
+    "rate": "{ nota do palestrante }"
+  }
+}
+```
+
+> Retorno
+
+```javascript
+Status: 200
+```
+
+```json
+{
+  "name": "{ nome do palestrante }",
+  "age": "{ idade do palestrante }",
+  "id": "{ id do palestrante }",
+  "talk": {
+    "watchedAt": "{ data da palestra no padrão dd/mm/aaaa }",
+    "rate": "{ nota do palestrante }"
+  }
+}
+```
+
+<hr />
+
+### `DELETE` /talker/:id
+
+> Exclui o palestrante com o "id" passado como parâmetro
+
+> Headers:
+
+```
+Authorization: { token retornado pelo EndPoint "/login" }
+```
+
+> Retorno
+
+```javascript
+Status: 204 (No Content)
 ```
 
 </details>
+
+## ⌨️ Executando o Projeto
+
+- Clone o repositório
+
+  ```bash
+  git clone git@github.com:carlos-a-reis/talker-manager.git
+  ```
+
+- Entre na pasta do repositório
+
+  ```bash
+  cd talker-manager/
+  ```
+  
+<details>
+<summary><h3>🖥️ Executando Localmente</h3></summary>
+
+- Instale as dependências
+
+  ```bash
+  npm install
+  ```
+  
+- Inicie a aplicação
+
+  ```bash
+  npm start
+  ```
+
+- A partir daqui, já é possível realizar as requisições aos EndPoints
+
+</details>
+
+<details>
+<summary><h3>🐳 Executando Com Docker</h3></summary>
+
+- Rode o serviço `node` para iniciar o container `talker-manager`
+
+  ```bash
+  docker compose up -d
+  ```
+
+- Acesse o terminal interativo do container que está rodando em segundo plano
+
+  ```bash
+  docker exec -it talker-manager bash
+  ```
+
+- Instale as dependências
+
+  ```bash
+  npm install
+  ```
+  
+- Inicie a aplicação
+
+  ```bash
+  npm start
+  ```
+
+- A partir daqui, já é possível realizar as requisições aos EndPoints
+
+</details>
+
+<details>
+<summary><h3>👨‍💻 Executando o Projeto em Modo Desenvolvedor</h3></summary>
+ 
+> É possível executar o projeto em modo desenvolvedor, tanto localmente quanto com [Docker](https://www.docker.com/get-started/), utilizando o [Nodemon](https://nodemon.io) para monitorar as mudanças nos arquivos e reiniciar automaticamente o servidor
+
+- Para fazer isso, em vez de usar `npm start`, utilize:
+
+  ```bash
+  npm run dev
+  ```
