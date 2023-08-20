@@ -78,6 +78,23 @@ const rateValidation = (req, res, next) => {
   next();
 };
 
+const loginValidation = (req, res, next) => {
+  const { email, password } = req.body;
+  const validator = /\S+@\S+\.\S+/;
+
+  if (!email) return res.status(400).json({ message: 'O campo "email" é obrigatório' });
+  if (!validator.test(email)) {
+    return res.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
+  }
+
+  if (!password) return res.status(400).json({ message: 'O campo "password" é obrigatório' });
+  if (password.length < 6) {
+    return res.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
+  }
+
+  next();
+};
+
 app.get('/talker', async (_req, res) => {
   const talkers = await getTalkers();
   
@@ -105,20 +122,7 @@ app.get('/talker/:id', async (req, res) => {
   res.status(200).json(talker);
 });
 
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  const validator = /\S+@\S+\.\S+/;
-
-  if (!email) return res.status(400).json({ message: 'O campo "email" é obrigatório' });
-  if (!validator.test(email)) {
-    return res.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
-  }
-
-  if (!password) return res.status(400).json({ message: 'O campo "password" é obrigatório' });
-  if (password.length < 6) {
-    return res.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
-  }
-  
+app.post('/login', loginValidation, (_req, res) => {
   const token = tokenGenerator();
   tokens.push({ token });
 
